@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <!-- user Spring default values -->
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/base.xml" />
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+
+    <!--    custom values-->
+    <property name="LOG_LEVEL" value="${logLevel:-info}" />
+    <property name="GRAYLOG_HOST" value="${graylogHost:-q-elastic-stack-03.sec.telecel.net.py}"/>
+
+    <!-- CONSOLE APPENDER -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d{yyyy-MM-dd HH:mm:ss} - %msg%n</Pattern>
+        </encoder>
+    </appender>
+
+    <appender name="gelf" class="biz.paluch.logging.gelf.logback.GelfLogbackAppender">
+        <host>udp:${GRAYLOG_HOST}</host>
+        <port>12201</port>
+        <version>1.0</version>
+        <facility>logstash-gelf</facility>
+        <extractStackTrace>true</extractStackTrace>
+        <filterStackTrace>true</filterStackTrace>
+        <includeLocation>true</includeLocation>
+        <mdcProfiling>true</mdcProfiling>
+	<additionalFields>microservicio=be-outage</additionalFields>
+        <timestampPattern>yyyy-MM-dd HH:mm:ss,SSS</timestampPattern>
+        <maximumMessageSize>8192</maximumMessageSize>
+        <additionalFields>appName=${appName}</additionalFields>
+        <additionalFieldTypes>appName=String</additionalFieldTypes>
+
+        <includeFullMdc>true</includeFullMdc>
+    </appender>
+
+    <root level="${LOG_LEVEL}">
+        <appender-ref ref="gelf"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
+

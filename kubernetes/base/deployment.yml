@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: be-outage 
+  namespace: outage
+  labels:
+    app.kubernetes.io/name: be-outage 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: be-outage 
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: be-outage 
+    spec:
+      imagePullSecrets:
+      - name: gitlab-registry
+      volumes:
+        - name: properties
+          configMap:
+            name: be-outage-properties
+            optional: true
+        - name: otel
+          emptyDir:
+            sizeLimit: 100Mi
+      initContainers:
+        - name: opentelemetry-agent-copy
+          image: p-nexus-01.sec.telecel.net.py:4567/curlimages/curl
+          volumeMounts:
+          - name: otel
+            mountPath: /opt/otel
+          command: ["curl", "-vvv", "https://nexus.telecel.net.py/repository/maven-central/io/opentelemetry/javaagent/opentelemetry-javaagent/1.26.0/opentelemetry-javaagent-1.26.0.jar", "-o", "/opt/otel/otel-agent.jar"]
+      containers:
+      - name: app
+        image: p-nexus-01.sec.telecel.net.py:4567/noc/be-outage:1.0.11
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: properties
+          mountPath: /opt/daemon/config
+          readOnly: true
+        - name: otel
+          mountPath: /opt/otel
+          readOnly: true
+        env:
+          - name: SPRING_CONFIG_LOCATION
+            value: file:///opt/daemon/config/application.properties
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "http://q-ikb-wrk-01.sec.telecel.net.py:30317"
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: service.name=be-outage 
+          - name: JAVA_TOOL_OPTIONS
+            value: "-javaagent:/opt/otel/otel-agent.jar"
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: service.name=be-outage
+          - name: JAVA_TOOL_OPTIONS
+            value: "-javaagent:/opt/otel/otel-agent.jar"
+          - name: SPRING_DATASOURCE_USERNAME
+            value: "outage_ivr"
+          - name: SPRING_DATASOURCE_PASSWORD
+            value: "Tigo2023!!"
+          - name: SPRING_SECURITY_LDAP_DOMAIN
+            value: "telecel.net.py"
+          - name: SPRING_SECURITY_LDAP_URL
+            value: "ldap://dc.telecel.net.py:389"
+          - name: REDIS_CLUSTER_NODES
+            value: "q-icache-01.sec.telecel.net.py:6379,q-icache-02.sec.telecel.net.py:6379,q-icache-04.sec.telecel.net.py:6379,q-icache-05.sec.telecel.net.py:6379,q-icache-06.sec.telecel.net.py:6379"  
+          - name: NCENTERENDPOINT
+            value: "http://vproxy-qa-osb12.telecel.net.py/osb/Platforms/NotificationCenter/SendNotification/V1"
+        ports:
+          - name: backendport
+            containerPort: 8080
+        resources:
+          limits:
+            memory: "512Mi"  # Definir límite de memoria en 512 MiB
+          requests:
+            memory: "256Mi"  # Definir solicitud de memoria en 256 MiB

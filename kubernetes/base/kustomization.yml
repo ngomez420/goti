@@ -1,0 +1,11 @@
+resources:
+  - base/deployment.yml
+  - base/service.yml
+  - base/ingress-kong.yml
+#test
+configMapGenerator:
+- name: be-outage-properties
+  namespace: outage
+  files:
+    - app/application.properties
+    - app/logback-spring.xml

@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: be-outage-ingress-kong
+  namespace: outage
+  labels:
+    app.kubernetes.io/name: be-outage
+spec:
+  ingressClassName: kong
+  rules:
+  - host: koutage-be.qa.sec.telecel.net.py
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: be-outage-service
+            port:
+              number: 80
+
+
+
